@@ -65,7 +65,7 @@ title('Linearer Plot für voll besetzte Matrizen')
 
 %% Erstelle logarithmischen Plot der Laufzeiten für voll besetzte Matrizen
 
-subplot(2,2,2);                             % oberer linker plot
+subplot(2,2,2);                             % oberer rechter plot
 loglog(n,laufzeiten);                       % doppelt logarithmischer plot
 hold on
 c = laufzeiten([1,3],end)./n(end).^2;       % berechne die Vorfaktoren für die 
@@ -79,8 +79,10 @@ title('Doppelt Logarithmischer Plot für voll besetzte Matrizen')
 % Interpretation der Ergebnisse:
 %   - Asymptotisch können wir die theoretische Laufzeit von O(n^2) in allen
 %     drei Methoden beobachten.
-%   - die starken schwankungen die hier auftreten, sind ähnlich wie die
-%     "Ausreißer" im linearen plot unter anderem auf schwankende
+%   - Die deutlich schnellere Laufzeit des V3 kann hier durch eine
+%   vertikale Verschiebung gesehen werden.
+%   - die starken Schwankungen die hier auftreten, sind ähnlich wie die
+%     "Ausreißer" im linearen Plot unter anderem auf schwankende
 %     Rechnerauslastung durch andere Prozesse zurückzuführen. Um diese
 %     auszugleichen, sollte jeder Test mehrmals durchgeführt und das
 %     Mittelmaß verwendet werden. Dies dauert allerdings dementsprechend
@@ -88,13 +90,80 @@ title('Doppelt Logarithmischer Plot für voll besetzte Matrizen')
 
 
 
+%% Laufzeittest von vorSubs für große dünn besetzte Matrizen
+% Die Laufzeit von wird erneut für diesmal dünn besetzte Matrizen gemessen.
+% Als Testmatrix verwenden wir die untere Dreiecksmatrix der 
+% Poisson-Matrizen aus der Matlab-Galerie.
+% Diese werden benutzt um die 2-Dimensionale partielle
+% Differentialgleichung -(u_{xx}+u_{yy})=f numerisch zu lösen.
+%
+% Damit die Laufzeit nicht explodiert, wenden wir V1 nur auf kleine
+% Matrizen an.
+
+n = floor(linspace(5,100,50));      % 
+laufzeiten2 = zeros(4,length(n));       % Zum abspeichern der Laufzeiten für dünn besetzte Matrizen
+L0=tril(gallery('poisson',n(end)));
+
+for k=1:length(n)
+    L=L0(1:(n(k)^2),1:(n(k)^2));     % Matrix der Größe n(k)^2 x n(k)^2
+    b=rand(n(k)^2,1);                   % Vektor der Größe n(k)^2
+    
+    if n(k)^2 < 6*10^2
+        tic;                                
+        vorSubsV1(L,b);                     
+        laufzeiten2(1,k)=toc;  
+    else
+        laufzeiten2(1,k)=nan;
+    end
+    
+    tic;
+    vorSubsV2(L,b);
+    laufzeiten2(2,k)=toc;
+
+    tic;
+    vorSubsV3(L,b);
+    laufzeiten2(3,k)=toc;
+    
+    tic;
+    vorSubsV4(L,b);
+    laufzeiten2(4,k)=toc;
+end
 
 
+%% Erstelle linearen Plot der Laufzeiten für dünn besetzte Matrizen
+
+subplot(2,2,3);                         % unterer linker plot
+plot(n.^2,laufzeiten2);                 % linearer plot
+legend('V1','V2','V3','V4');                 % benenne die Daten
+legend('Location','northwest');         % Verschiebe die Legende nach oben links
+title('Linearer Plot für dünn besetzte Matrizen')
 
 
+%% Erstelle logarithmischen Plot der Laufzeiten für voll besetzte Matrizen
+
+subplot(2,2,4);                             % unterer rechter plot
+loglog(n.^2,laufzeiten2);                   % doppelt logarithmischer plot
+hold on
+
+lastV1= find(isnan(laufzeiten2(1,:)),1)-1;  % letzter nutzbare Wert für V1;
+c1 = laufzeiten2(1,lastV1)./n(lastV1).^4;
+
+c3 = laufzeiten2(3,end)./n(end).^3;
+c4 = laufzeiten2(4,end)./n(end).^2;
 
 
+loglog(n.^2,c1*n.^4,':');
+loglog(n.^2,c3*n.^3,'--');
+loglog(n.^2,c4*n.^2,'--');  
+hold off
 
+legend('V1','V2','V3','V4','c_1*n^2','c_3*n^{1.5}','c_4*n^1'); 
+legend('Location','northwest');            
+title('Doppelt Logarithmischer Plot für dünn besetzte Matrizen')
+xlim([n(1)^2,n(end)^2]);  
 
-
+% Interpretation der Ergebnisse:
+%   - V1 hat immer noch eine Laufzeit von O(n^2) während die beiden
+%     Vektorisierten Methoden V2 und V3 nur noch ungefähr O(n^1.5) sind.
+%   - Der Backslashoperator erreicht sogar das theoretische Maximum für O(n)
 

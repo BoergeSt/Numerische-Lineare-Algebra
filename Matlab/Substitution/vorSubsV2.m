@@ -18,7 +18,7 @@ function b = vorSubsV2(L,b)
 %
 %   Laufzeit:
 %       voll besetztes L: O(n^2)
-%       dünn besetztes L: O(n)
+%       dünn besetztes L: O(n^1.5)
 
 for i=1:length(b)
     b(i)=b(i)-L(i,1:i-1)*b(1:i-1);
